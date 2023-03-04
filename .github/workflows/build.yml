@@ -5,8 +5,15 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        plan:
+        - { build: stack, resolver: "--resolver nightly-2023-02-09" }
+        - { build: stack, resolver: "--resolver lts-20.13" }
+        include: []
     name: Stack
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Source code
         uses: actions/checkout@v3
@@ -27,8 +34,18 @@ jobs:
       - name: Setup Stack
         uses: mstksg/setup-stack@v1
       - name: Install dependencies
-        run: stack --no-terminal --install-ghc --resolver nightly-2023-02-09 test --bench --only-dependencies
+        run: |
+          set -ex
+          stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
+          set +ex
+        env:
+          ARGS: ${{ matrix.plan.resolver }}
       - name: Stack Test
-        run: stack --no-terminal --resolver nightly-2023-02-09 test --bench --no-run-benchmarks --haddock --no-haddock-deps
+        run: |
+          set -ex
+          stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
+          set +ex
+        env:
+          ARGS: ${{ matrix.plan.resolver }}
 
 
